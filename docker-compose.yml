@@ -13,8 +13,9 @@ services:
       POSTGRES_USER: blockproof
       POSTGRES_PASSWORD: blockproof
       POSTGRES_DB: blockproof
+    # Host port 5433 to avoid clashing with a locally-installed PostgreSQL on 5432.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

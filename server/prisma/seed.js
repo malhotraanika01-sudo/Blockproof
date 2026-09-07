@@ -12,6 +12,7 @@ import argon2 from 'argon2';
 import 'dotenv/config';
 import { sha256, encryptEvidence } from '../src/services/crypto.js';
 import { putBlob, ensureStorage } from '../src/services/storage.js';
+import { ledger } from '../src/services/ledger/index.js';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'Password123!';
@@ -68,6 +69,7 @@ async function main() {
     return;
   }
   await ensureStorage();
+  await ledger.init(); // seed anchors evidence through the real ledger driver
 
   // ── RBAC ────────────────────────────────────────────────
   const roles = {};
@@ -164,16 +166,7 @@ async function main() {
           integrityStatus: 'PENDING',
         },
       });
-      await prisma.blockchainTransaction.create({
-        data: {
-          evidenceId: ev.evidenceId,
-          eventType: 'EVIDENCE_CREATED',
-          fabricTxId: `mock:${digest.slice(0, 32)}`,
-          blockReference: `blk-${1000 + evidenceSeq}`,
-          recordedHash: digest,
-          payload: { evidenceCode: ev.evidenceCode, filename: f.filename, event: 'EVIDENCE_CREATED' },
-        },
-      });
+      await ledger.createEvidence(ev, reporter.userId); // anchors hash + mirrors row
       evidenceRows.push(ev);
     }
     return { report, evidenceRows };
@@ -257,15 +250,7 @@ async function main() {
     });
     await prisma.case.update({ where: { caseId: c.caseId }, data: { status: 'IN_PROGRESS' } });
     for (const ev of evidenceRows) {
-      await prisma.blockchainTransaction.create({
-        data: {
-          evidenceId: ev.evidenceId, eventType: 'ASSIGNED',
-          fabricTxId: `mock:assign:${c.caseNumber}:${ev.evidenceCode}`,
-          blockReference: `blk-assign-${ev.evidenceId}`,
-          recordedHash: ev.sha256Hash,
-          payload: { caseNumber: c.caseNumber, investigator: investigator.fullName },
-        },
-      });
+      await ledger.recordEvent(ev, 'ASSIGNED', { caseNumber: c.caseNumber, investigator: investigator.fullName });
     }
     for (const u of statusUpdates) {
       await prisma.investigationUpdate.create({
@@ -301,31 +286,20 @@ async function main() {
       transferredById: inv1.userId, reason: 'Forensic examination of document metadata', status: 'PENDING',
     },
   });
+  const t1Event = await ledger.transferEvidence(ev1, {
+    fromLocationId: loc.INTAKE.locationId, toLocationId: loc.LAB.locationId, byUserId: inv1.userId,
+  });
   await prisma.evidenceTransfer.update({
     where: { transferId: t1.transferId },
-    data: { status: 'COMPLETED', receivedById: inv2.userId, completedAt: new Date(), blockchainTxId: `mock:transfer:${ev1.evidenceCode}` },
-  });
-  await prisma.blockchainTransaction.create({
-    data: {
-      evidenceId: ev1.evidenceId, eventType: 'TRANSFERRED',
-      fabricTxId: `mock:transfer:${ev1.evidenceCode}`, blockReference: `blk-xfer-${ev1.evidenceId}`,
-      recordedHash: ev1.sha256Hash,
-      payload: { from: 'Central Evidence Intake', to: 'Digital Forensics Lab' },
-    },
+    data: { status: 'COMPLETED', receivedById: inv2.userId, completedAt: new Date(), blockchainTxId: t1Event.fabricTxId },
   });
 
-  // Verification event (VERIFIED) for case1 evidence
+  // Verification event (VERIFIED) for case1 evidence — genuine ledger comparison
   await prisma.evidence.update({
     where: { evidenceId: ev1.evidenceId },
     data: { integrityStatus: 'VERIFIED', lastVerifiedAt: new Date() },
   });
-  await prisma.blockchainTransaction.create({
-    data: {
-      evidenceId: ev1.evidenceId, eventType: 'VERIFIED',
-      fabricTxId: `mock:verify:${ev1.evidenceCode}`, blockReference: `blk-verify-${ev1.evidenceId}`,
-      recordedHash: ev1.sha256Hash, payload: { result: 'VERIFIED' },
-    },
-  });
+  await ledger.recordEvent(ev1, 'VERIFIED', { result: 'VERIFIED', by: inv1.userId });
 
   console.log('\nSeed complete.');
   console.table([
@@ -342,4 +316,7 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await ledger.shutdown();
+    await prisma.$disconnect();
+  });

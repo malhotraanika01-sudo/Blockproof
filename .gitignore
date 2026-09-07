@@ -40,6 +40,7 @@ fabric/*.tar.gz
 
 # logs / os / editor
 *.log
+.run.*
 npm-debug.log*
 .DS_Store
 Thumbs.db
