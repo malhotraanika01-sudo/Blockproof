@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "BlockProof API",
+    "description": "REST API for BlockProof. Set {{baseUrl}} (default http://localhost:4000). Run 'Login - Head' first; it captures {{headToken}}. Same for Investigator / Common.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "headToken", "value": "" },
+    { "key": "invToken", "value": "" },
+    { "key": "commonToken", "value": "" },
+    { "key": "trackingCode", "value": "" },
+    { "key": "caseId", "value": "1" },
+    { "key": "evidenceId", "value": "1" },
+    { "key": "evidenceCode", "value": "EV-1001" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login - Head",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.collectionVariables.set('headToken', pm.response.json().token);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"head@blockproof.demo\",\n  \"password\": \"Password123!\"\n}" }
+          }
+        },
+        {
+          "name": "Login - Investigator",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.collectionVariables.set('invToken', pm.response.json().token);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rmalone@blockproof.demo\",\n  \"password\": \"Password123!\"\n}" }
+          }
+        },
+        {
+          "name": "Login - Common User",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.collectionVariables.set('commonToken', pm.response.json().token);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"asha.reddy@example.com\",\n  \"password\": \"Password123!\"\n}" }
+          }
+        },
+        {
+          "name": "Register (Common)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"new.citizen@example.com\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"New Citizen\"\n}" }
+          }
+        },
+        {
+          "name": "Me",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/auth/me" }
+        }
+      ]
+    },
+    {
+      "name": "Common User",
+      "item": [
+        {
+          "name": "Submit report",
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.collectionVariables.set('trackingCode', pm.response.json().trackingCode);"] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{commonToken}}" }],
+            "url": "{{baseUrl}}/api/reports",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "crimeType", "value": "Phishing", "type": "text" },
+                { "key": "title", "value": "Fake bank SMS", "type": "text" },
+                { "key": "description", "value": "Received a phishing SMS with a lookalike bank link.", "type": "text" },
+                { "key": "incidentAt", "value": "2026-09-05T14:30", "type": "text" },
+                { "key": "incidentLocation", "value": "Mobile / SMS", "type": "text" },
+                { "key": "files", "type": "file", "src": [] }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My reports",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{commonToken}}" }], "url": "{{baseUrl}}/api/reports?pageSize=20" }
+        },
+        {
+          "name": "Track report",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{commonToken}}" }], "url": "{{baseUrl}}/api/reports/track/{{trackingCode}}" }
+        },
+        {
+          "name": "Common hitting /blockchain (expect 403)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{commonToken}}" }], "url": "{{baseUrl}}/api/blockchain" }
+        }
+      ]
+    },
+    {
+      "name": "Head",
+      "item": [
+        { "name": "Reports queue", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/reports?pageSize=50" } },
+        { "name": "Create case from report", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/cases", "body": { "mode": "raw", "raw": "{\n  \"reportId\": 3,\n  \"priority\": \"HIGH\"\n}" } } },
+        { "name": "Assign investigator", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/cases/{{caseId}}/assign", "body": { "mode": "raw", "raw": "{\n  \"investigatorId\": 3\n}" } } },
+        { "name": "Analytics summary", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/analytics/summary" } },
+        { "name": "Analytics charts", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/analytics/charts" } },
+        { "name": "Blockchain feed", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/blockchain?pageSize=50" } },
+        { "name": "Blockchain per-evidence", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/blockchain/evidence/{{evidenceCode}}" } },
+        { "name": "Audit logs", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/admin/audit?pageSize=25" } },
+        { "name": "Users", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }], "url": "{{baseUrl}}/api/admin/users" } },
+        { "name": "Create staff account", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{headToken}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/admin/users", "body": { "mode": "raw", "raw": "{\n  \"email\": \"new.det@blockproof.demo\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Det. New Hire\",\n  \"role\": \"INVESTIGATOR\",\n  \"badgeNumber\": \"INV-2299\"\n}" } } }
+      ]
+    },
+    {
+      "name": "Investigator",
+      "item": [
+        { "name": "My cases", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/cases" } },
+        { "name": "Case detail", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/cases/{{caseId}}" } },
+        { "name": "Add investigation update", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/cases/{{caseId}}/updates", "body": { "mode": "raw", "raw": "{\n  \"updateType\": \"NOTE\",\n  \"body\": \"Contacted the bank fraud desk for the transaction trail.\"\n}" } } },
+        { "name": "Evidence detail", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/evidence/{{evidenceId}}" } },
+        { "name": "Evidence custody timeline", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/evidence/{{evidenceId}}/custody" } },
+        { "name": "Verify evidence integrity", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/evidence/{{evidenceId}}/verify" } },
+        { "name": "Initiate transfer", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }, { "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/transfers", "body": { "mode": "raw", "raw": "{\n  \"evidenceId\": 2,\n  \"fromLocationId\": 1,\n  \"toLocationId\": 2,\n  \"reason\": \"Lab analysis of image metadata\"\n}" } } },
+        { "name": "Investigator hitting /blockchain (expect 403)", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{invToken}}" }], "url": "{{baseUrl}}/api/blockchain" } }
+      ]
+    }
+  ]
+}
