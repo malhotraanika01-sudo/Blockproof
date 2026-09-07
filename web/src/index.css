@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Head command center is a dark surface */
+.theme-command {
+  background: #0b0f14;
+  color: #e6edf3;
+  min-height: 100%;
+}
+
+@layer components {
+  .bp-input {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900
+      outline-none transition focus:border-civic-500 focus:ring-2 focus:ring-civic-500/20
+      placeholder:text-gray-400;
+  }
+  .bp-label {
+    @apply mb-1.5 block text-sm font-medium text-gray-700;
+  }
+  .bp-card {
+    @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+  }
+}
+
+/* CSS entrance animation used by the lib/motion.jsx shim */
+@keyframes bpFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.bp-anim-fade-up {
+  animation: bpFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-anim-fade-up {
+    animation: none;
+  }
+}
+
+/* thin scrollbars in dense tables */
+.bp-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.bp-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 4px;
+}

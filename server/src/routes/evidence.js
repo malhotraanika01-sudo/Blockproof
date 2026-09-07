@@ -6,9 +6,50 @@ import { requireRole, requirePermission } from '../middleware/rbac.js';
 import { NotFound, Forbidden } from '../utils/errors.js';
 import { verifyEvidence, openEvidence } from '../services/evidence.js';
 import { audit } from '../services/audit.js';
+import { parseListQuery, paginated } from '../utils/query.js';
 
 const router = Router();
 router.use(verifyJWT);
+
+// List evidence. Head: everything. Investigator: only items on assigned cases.
+router.get(
+  '/',
+  requireRole('HEAD', 'INVESTIGATOR'),
+  asyncHandler(async (req, res) => {
+    const { skip, take, q, orderBy, page, pageSize } = parseListQuery(req.query, {
+      sortable: ['createdAt', 'integrityStatus', 'evidenceCode'],
+      defaultSort: 'createdAt',
+    });
+    const where = {};
+    if (req.auth.role === 'INVESTIGATOR') {
+      where.case = { assignments: { some: { investigatorId: req.auth.userId, isActive: true } } };
+    }
+    if (req.query.integrityStatus) where.integrityStatus = req.query.integrityStatus;
+    if (req.query.caseId) where.caseId = Number(req.query.caseId);
+    if (q) {
+      where.OR = [
+        { evidenceCode: { contains: q, mode: 'insensitive' } },
+        { originalFilename: { contains: q, mode: 'insensitive' } },
+        { sha256Hash: { contains: q.toLowerCase() } },
+      ];
+    }
+    const [rows, total] = await Promise.all([
+      prisma.evidence.findMany({
+        where, skip, take, orderBy,
+        select: {
+          evidenceId: true, evidenceCode: true, originalFilename: true, mimeType: true,
+          sizeBytes: true, integrityStatus: true, lastVerifiedAt: true, createdAt: true, sha256Hash: true,
+          evidenceType: { select: { name: true } },
+          case: { select: { caseNumber: true } },
+          report: { select: { trackingCode: true, crimeType: true } },
+          _count: { select: { ledgerTxs: true, transfers: true } },
+        },
+      }),
+      prisma.evidence.count({ where }),
+    ]);
+    res.json(paginated(rows, total, { page, pageSize }));
+  }),
+);
 
 /** Evidence is visible to Head, or to the investigator holding the case. */
 async function loadAuthorizedEvidence(req) {
