@@ -1,0 +1,30 @@
+{
+  "name": "blockproof",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BlockProof - Blockchain-Based Digital Crime Reporting, Evidence Integrity & Investigation Management System",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:server dev:web",
+    "dev:server": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm run prisma:migrate --workspace server",
+    "db:seed": "npm run seed --workspace server",
+    "db:reset": "npm run prisma:reset --workspace server",
+    "stack:up": "docker compose up -d",
+    "stack:down": "docker compose down",
+    "fabric:up": "bash fabric/network.sh up",
+    "fabric:deploy": "bash fabric/network.sh deploy",
+    "fabric:down": "bash fabric/network.sh down"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

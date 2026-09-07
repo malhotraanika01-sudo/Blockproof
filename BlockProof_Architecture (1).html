@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BlockProof — System Architecture</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/3.4.1/tailwind.min.js"></script>
+<style>
+  body { font-family: 'Segoe UI', -apple-system, sans-serif; background:#0f1115; color:#e6e6e6; }
+  .card { background:#171a21; border:1px solid #2a2e38; border-radius:12px; }
+  .mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+  .arrow-down::after { content:'↓'; display:block; text-align:center; color:#6b7280; font-size:22px; margin:4px 0; }
+</style>
+</head>
+<body class="p-6 md:p-10 max-w-6xl mx-auto">
+
+<header class="mb-10">
+  <div class="text-xs tracking-widest text-teal-400 font-semibold mb-2">SYSTEM ARCHITECTURE — V1.0</div>
+  <h1 class="text-3xl md:text-4xl font-bold text-white">BlockProof</h1>
+  <p class="text-gray-400 mt-2 max-w-3xl">Blockchain-based digital crime reporting, evidence integrity &amp; investigation management system. Three isolated frontends, a single RBAC-protected Express API, PostgreSQL for relational state, and Hyperledger Fabric for immutable custody/integrity records.</p>
+</header>
+
+<!-- ===================== LAYERED OVERVIEW ===================== -->
+<section class="mb-12">
+  <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">1. Layered overview</h2>
+
+  <!-- Client layer -->
+  <div class="card p-5 mb-2">
+    <div class="text-xs text-gray-500 mb-3 uppercase tracking-wide">Client layer — 3 separate React apps/bundles</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-lg p-4 bg-blue-950/40 border border-blue-800">
+        <div class="font-semibold text-blue-300">Common User Portal</div>
+        <div class="text-sm text-gray-400 mt-1">Public reporting site. Report crime, upload evidence, track status.</div>
+      </div>
+      <div class="rounded-lg p-4 bg-teal-950/40 border border-teal-800">
+        <div class="font-semibold text-teal-300">Investigator Workspace</div>
+        <div class="text-sm text-gray-400 mt-1">Assigned cases, evidence review, transfers, verification.</div>
+      </div>
+      <div class="rounded-lg p-4 bg-purple-950/40 border border-purple-800">
+        <div class="font-semibold text-purple-300">Head Command Center</div>
+        <div class="text-sm text-gray-400 mt-1">Full access, analytics, audit logs, blockchain history.</div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500 mt-3">React + Tailwind CSS + Framer Motion + Lucide React + Recharts + React Router · each talks to the same API over HTTPS/REST with a JWT</div>
+  </div>
+  <div class="arrow-down"></div>
+
+  <!-- API layer -->
+  <div class="card p-5 mb-2">
+    <div class="text-xs text-gray-500 mb-3 uppercase tracking-wide">Application / API layer</div>
+    <div class="rounded-lg p-4 bg-gray-800/60 border border-gray-600">
+      <div class="font-semibold text-white">Express.js REST API (Node.js)</div>
+      <div class="text-sm text-gray-400 mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+        <div>• JWT auth middleware</div>
+        <div>• RBAC middleware (role/permission checks on every route)</div>
+        <div>• Multer — file upload handling</div>
+        <div>• Route controllers: Reports, Cases, Evidence, Transfers, Verification, Users, Analytics, Audit, Blockchain</div>
+        <div>• Validation &amp; centralized error handling</div>
+        <div>• Prisma Client — DB access</div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500 mt-3">Single API, RBAC enforced server-side — never trust hidden UI. <span class="text-gray-300">Common User</span> and <span class="text-gray-300">Investigator</span> get 403 on blockchain-history routes; only <span class="text-gray-300">Head</span> passes.</div>
+  </div>
+  <div class="arrow-down"></div>
+
+  <!-- Security layer -->
+  <div class="card p-5 mb-2">
+    <div class="text-xs text-gray-500 mb-3 uppercase tracking-wide">Security / cryptography layer (invoked by API layer)</div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="rounded-lg p-3 bg-amber-950/40 border border-amber-800 text-sm">
+        <div class="font-semibold text-amber-300">JWT</div>
+        <div class="text-gray-400 mt-1">Session/auth tokens, role claims</div>
+      </div>
+      <div class="rounded-lg p-3 bg-amber-950/40 border border-amber-800 text-sm">
+        <div class="font-semibold text-amber-300">Argon2 / bcrypt</div>
+        <div class="text-gray-400 mt-1">Password hashing</div>
+      </div>
+      <div class="rounded-lg p-3 bg-red-950/40 border border-red-800 text-sm">
+        <div class="font-semibold text-red-300">AES-256-GCM</div>
+        <div class="text-gray-400 mt-1">Encrypts evidence bytes (confidentiality)</div>
+      </div>
+      <div class="rounded-lg p-3 bg-red-950/40 border border-red-800 text-sm">
+        <div class="font-semibold text-red-300">SHA-256</div>
+        <div class="text-gray-400 mt-1">Evidence fingerprint (integrity)</div>
+      </div>
+    </div>
+  </div>
+  <div class="arrow-down"></div>
+
+  <!-- Data layer -->
+  <div class="card p-5">
+    <div class="text-xs text-gray-500 mb-3 uppercase tracking-wide">Data &amp; ledger layer</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-lg p-4 bg-green-950/40 border border-green-800">
+        <div class="font-semibold text-green-300">PostgreSQL <span class="text-xs font-normal text-gray-400">(via Prisma ORM)</span></div>
+        <div class="text-sm text-gray-400 mt-1">~14 normalized tables: Users, Roles, Permissions, Crime_Reports, Cases, Evidence, Evidence_Types, Evidence_Transfers, Investigation_Updates, Forensic_Analysis, Court_Submissions, Evidence_Locations, Blockchain_Transactions, Audit_Logs</div>
+      </div>
+      <div class="rounded-lg p-4 bg-gray-800/60 border border-gray-600">
+        <div class="font-semibold text-gray-200">Encrypted file storage</div>
+        <div class="text-sm text-gray-400 mt-1">AES-256-GCM ciphertext blobs. Files referenced from Evidence table by pointer/key, never stored on-chain.</div>
+      </div>
+      <div class="rounded-lg p-4 bg-purple-950/40 border border-purple-800">
+        <div class="font-semibold text-purple-300">Hyperledger Fabric</div>
+        <div class="text-sm text-gray-400 mt-1">Permissioned ledger. JS chaincode: CreateEvidence, TransferEvidence, VerifyEvidence, GetEvidence, GetEvidenceHistory. Stores hash + custody events only.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ACCESS MATRIX ===================== -->
+<section class="mb-12">
+  <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">2. Request path &amp; RBAC gate</h2>
+  <div class="card p-5">
+    <div class="mono text-sm text-gray-300 leading-7 overflow-x-auto whitespace-pre">
+Client (Common User / Investigator / Head)
+     │  HTTPS + Bearer JWT
+     ▼
+Express API — verifyJWT() → attach {userId, roleId}
+     │
+     ▼
+RBAC middleware — checkPermission(route, role)
+     │
+     ├─ Common User  → Reports/Evidence-upload routes only        (403 elsewhere)
+     ├─ Investigator → Assigned-case, evidence, transfer, verify  (403 on /blockchain/*, /users/*)
+     └─ Head         → All routes, incl. /blockchain/*, /audit/*, /users/*
+     │
+     ▼
+Controller → Service → Prisma → PostgreSQL
+                     └→ (evidence ops) Crypto service → Fabric Gateway → Chaincode
+    </div>
+  </div>
+</section>
+
+<!-- ===================== EVIDENCE FLOW ===================== -->
+<section class="mb-12">
+  <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">3. Evidence upload &amp; integrity flow</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <div class="font-semibold text-white mb-3">Upload / custody event</div>
+      <ol class="text-sm text-gray-400 space-y-2 list-decimal list-inside">
+        <li>Common User uploads file via portal (Multer)</li>
+        <li>Backend validates file type/size</li>
+        <li>SHA-256 hash computed over original bytes</li>
+        <li>AES-256-GCM encrypts the file</li>
+        <li>Encrypted blob → file storage; metadata row → PostgreSQL <span class="text-gray-500">(Evidence table)</span></li>
+        <li>Hash + evidence ID + event type + timestamp → Fabric chaincode <span class="mono text-xs">CreateEvidence()</span></li>
+        <li>Returned Fabric tx ID stored in <span class="text-gray-500">Blockchain_Transactions</span></li>
+      </ol>
+    </div>
+    <div class="card p-5">
+      <div class="font-semibold text-white mb-3">Verification event</div>
+      <ol class="text-sm text-gray-400 space-y-2 list-decimal list-inside">
+        <li>Investigator/Head clicks Verify on an evidence item</li>
+        <li>Backend decrypts (as authorized) and recomputes SHA-256</li>
+        <li>Compares against hash on record / chaincode <span class="mono text-xs">VerifyEvidence()</span></li>
+        <li>Match → VERIFIED · Mismatch → TAMPERING DETECTED</li>
+        <li>Result written to Audit_Logs (trigger-backed)</li>
+        <li>Investigator sees pass/fail only — not the raw ledger</li>
+        <li>Head can additionally open full custody history <span class="mono text-xs">GetEvidenceHistory()</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ROLE VISIBILITY ===================== -->
+<section class="mb-12">
+  <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">4. Role-based visibility (enforced in both UI and API)</h2>
+  <div class="card p-5 overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead class="text-gray-500 border-b border-gray-700">
+        <tr><th class="py-2 pr-4">Capability</th><th class="py-2 pr-4">Common User</th><th class="py-2 pr-4">Investigator</th><th class="py-2 pr-4">Head</th></tr>
+      </thead>
+      <tbody class="text-gray-300">
+        <tr class="border-b border-gray-800"><td class="py-2 pr-4">Report crime / upload evidence</td><td>✅</td><td>—</td><td>—</td></tr>
+        <tr class="border-b border-gray-800"><td class="py-2 pr-4">View assigned cases</td><td>—</td><td>✅</td><td>✅ (all)</td></tr>
+        <tr class="border-b border-gray-800"><td class="py-2 pr-4">Transfer / verify evidence</td><td>—</td><td>✅</td><td>✅</td></tr>
+        <tr class="border-b border-gray-800"><td class="py-2 pr-4">Blockchain history / ledger detail</td><td>❌</td><td>❌</td><td class="text-teal-400 font-semibold">✅ only</td></tr>
+        <tr><td class="py-2 pr-4">Manage users/roles, audit logs, analytics</td><td>—</td><td>Limited</td><td>✅</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== DEPLOYMENT ===================== -->
+<section>
+  <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">5. Deployment topology</h2>
+  <div class="card p-5">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+      <div class="rounded-lg p-3 bg-blue-950/40 border border-blue-800">
+        <div class="font-semibold text-blue-300">Frontend</div>
+        <div class="text-gray-400 mt-1">Vercel — 3 React builds (or 3 routes/subdomains)</div>
+      </div>
+      <div class="rounded-lg p-3 bg-gray-800/60 border border-gray-600">
+        <div class="font-semibold text-gray-200">Backend</div>
+        <div class="text-gray-400 mt-1">Render — Dockerized Express API</div>
+      </div>
+      <div class="rounded-lg p-3 bg-green-950/40 border border-green-800">
+        <div class="font-semibold text-green-300">Database</div>
+        <div class="text-gray-400 mt-1">Supabase / Railway managed PostgreSQL</div>
+      </div>
+      <div class="rounded-lg p-3 bg-purple-950/40 border border-purple-800">
+        <div class="font-semibold text-purple-300">Blockchain</div>
+        <div class="text-gray-400 mt-1">Hyperledger Fabric test network in Docker (demo scope)</div>
+      </div>
+    </div>
+    <div class="text-xs text-gray-500 mt-4">All services containerized where practical; secrets via environment variables, excluded from Git. CI: GitHub with main/dev branches.</div>
+  </div>
+</section>
+
+<footer class="mt-12 pt-4 border-t border-gray-800 text-xs text-gray-600">
+  BlockProof — academic DBMS + blockchain demonstration project. Not a production forensic/court system.
+</footer>
+
+</body>
+</html>

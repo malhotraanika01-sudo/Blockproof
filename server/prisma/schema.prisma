@@ -1,0 +1,313 @@
+// BlockProof relational schema
+// PostgreSQL + Prisma. 16 entities, 3NF+. Derived from docs/ER-DIAGRAM.md.
+// CHECK constraints and DB-side objects (views, functions, triggers) live in
+// prisma/sql/*.sql and are applied by `npm run db:apply-sql` after migrate.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// ─────────────────────────── RBAC ───────────────────────────
+
+model Role {
+  roleId      Int              @id @default(autoincrement()) @map("role_id")
+  name        String           @unique @db.VarChar(32) // HEAD | INVESTIGATOR | COMMON_USER
+  description String?          @db.VarChar(255)
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  permissionId Int              @id @default(autoincrement()) @map("permission_id")
+  code         String           @unique @db.VarChar(64) // e.g. "blockchain:read"
+  description  String?          @db.VarChar(255)
+  roles        RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [roleId], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [permissionId], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  userId       Int      @id @default(autoincrement()) @map("user_id")
+  roleId       Int      @map("role_id")
+  email        String   @unique @db.VarChar(160)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  fullName     String   @map("full_name") @db.VarChar(120)
+  phone        String?  @db.VarChar(20)
+  badgeNumber  String?  @unique @map("badge_number") @db.VarChar(32)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  role                  Role                  @relation(fields: [roleId], references: [roleId])
+  crimeReports          CrimeReport[]
+  ledCases              Case[]                @relation("CaseLeadHead")
+  assignmentsAsInvestig CaseAssignment[]      @relation("AssignmentInvestigator")
+  assignmentsMade       CaseAssignment[]      @relation("AssignmentAssignedBy")
+  submittedEvidence     Evidence[]            @relation("EvidenceSubmittedBy")
+  investigationUpdates  InvestigationUpdate[]
+  transfersInitiated    EvidenceTransfer[]    @relation("TransferBy")
+  transfersReceived     EvidenceTransfer[]    @relation("TransferReceivedBy")
+  forensicAnalyses      ForensicAnalysis[]
+  courtSubmissions      CourtSubmission[]
+  custodianOf           EvidenceLocation[]
+  auditLogs             AuditLog[]
+
+  @@index([roleId])
+  @@map("users")
+}
+
+/// ─────────────────────── Reporting & cases ───────────────────────
+
+model CrimeReport {
+  reportId         Int      @id @default(autoincrement()) @map("report_id")
+  trackingCode     String   @unique @map("tracking_code") @db.VarChar(20)
+  reporterId       Int      @map("reporter_id")
+  crimeType        String   @map("crime_type") @db.VarChar(60)
+  title            String   @db.VarChar(160)
+  description      String   @db.Text
+  incidentAt       DateTime @map("incident_at")
+  incidentLocation String   @map("incident_location") @db.VarChar(255)
+  status           String   @default("SUBMITTED") @db.VarChar(20) // SUBMITTED|UNDER_REVIEW|ESCALATED|REJECTED|CLOSED
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  reporter User       @relation(fields: [reporterId], references: [userId])
+  case     Case?
+  evidence Evidence[]
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([crimeType])
+  @@map("crime_reports")
+}
+
+model Case {
+  caseId     Int       @id @default(autoincrement()) @map("case_id")
+  caseNumber String    @unique @map("case_number") @db.VarChar(24)
+  reportId   Int       @unique @map("report_id")
+  leadHeadId Int       @map("lead_head_id")
+  title      String    @db.VarChar(160)
+  priority   String    @default("MEDIUM") @db.VarChar(12) // LOW|MEDIUM|HIGH|CRITICAL
+  status     String    @default("OPEN") @db.VarChar(12) // OPEN|IN_PROGRESS|CLOSED|REOPENED
+  openedAt   DateTime  @default(now()) @map("opened_at")
+  closedAt   DateTime? @map("closed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  report      CrimeReport           @relation(fields: [reportId], references: [reportId])
+  leadHead    User                  @relation("CaseLeadHead", fields: [leadHeadId], references: [userId])
+  assignments CaseAssignment[]
+  evidence    Evidence[]
+  updates     InvestigationUpdate[]
+  submissions CourtSubmission[]
+
+  @@index([status])
+  @@index([leadHeadId])
+  @@map("cases")
+}
+
+model CaseAssignment {
+  assignmentId   Int       @id @default(autoincrement()) @map("assignment_id")
+  caseId         Int       @map("case_id")
+  investigatorId Int       @map("investigator_id")
+  assignedBy     Int       @map("assigned_by")
+  isActive       Boolean   @default(true) @map("is_active")
+  assignedAt     DateTime  @default(now()) @map("assigned_at")
+  unassignedAt   DateTime? @map("unassigned_at")
+
+  case         Case @relation(fields: [caseId], references: [caseId], onDelete: Cascade)
+  investigator User @relation("AssignmentInvestigator", fields: [investigatorId], references: [userId])
+  assigner     User @relation("AssignmentAssignedBy", fields: [assignedBy], references: [userId])
+
+  @@index([caseId])
+  @@index([investigatorId])
+  @@index([caseId, isActive])
+  @@map("case_assignments")
+}
+
+/// ─────────────────────────── Evidence ───────────────────────────
+
+model EvidenceType {
+  evidenceTypeId Int        @id @default(autoincrement()) @map("evidence_type_id")
+  name           String     @unique @db.VarChar(32) // IMAGE|VIDEO|AUDIO|DOCUMENT|DEVICE_IMAGE|OTHER
+  description    String?    @db.VarChar(255)
+  evidence       Evidence[]
+
+  @@map("evidence_types")
+}
+
+model Evidence {
+  evidenceId       Int       @id @default(autoincrement()) @map("evidence_id")
+  evidenceCode     String    @unique @map("evidence_code") @db.VarChar(20)
+  reportId         Int       @map("report_id")
+  caseId           Int?      @map("case_id")
+  evidenceTypeId   Int       @map("evidence_type_id")
+  submittedById    Int       @map("submitted_by")
+  originalFilename String    @map("original_filename") @db.VarChar(255)
+  mimeType         String    @map("mime_type") @db.VarChar(120)
+  sizeBytes        BigInt    @map("size_bytes")
+  sha256Hash       String    @map("sha256_hash") @db.Char(64)
+  storageKey       String    @map("storage_key") @db.VarChar(255)
+  encIv            String    @map("enc_iv") @db.VarChar(48)
+  encAuthTag       String    @map("enc_auth_tag") @db.VarChar(48)
+  integrityStatus  String    @default("PENDING") @map("integrity_status") @db.VarChar(12) // PENDING|VERIFIED|TAMPERED
+  lastVerifiedAt   DateTime? @map("last_verified_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  report       CrimeReport             @relation(fields: [reportId], references: [reportId])
+  case         Case?                   @relation(fields: [caseId], references: [caseId])
+  evidenceType EvidenceType            @relation(fields: [evidenceTypeId], references: [evidenceTypeId])
+  submittedBy  User                    @relation("EvidenceSubmittedBy", fields: [submittedById], references: [userId])
+  transfers    EvidenceTransfer[]
+  analyses     ForensicAnalysis[]
+  submissions  CourtSubmission[]
+  ledgerTxs    BlockchainTransaction[]
+
+  @@index([reportId])
+  @@index([caseId])
+  @@index([sha256Hash])
+  @@index([integrityStatus])
+  @@map("evidence")
+}
+
+model EvidenceLocation {
+  locationId  Int     @id @default(autoincrement()) @map("location_id")
+  name        String  @unique @db.VarChar(120)
+  kind        String  @db.VarChar(12) // INTAKE|LAB|LOCKER|COURT|FIELD
+  address     String? @db.VarChar(255)
+  custodianId Int?    @map("custodian_id")
+
+  custodian     User?              @relation(fields: [custodianId], references: [userId])
+  transfersFrom EvidenceTransfer[] @relation("TransferFrom")
+  transfersTo   EvidenceTransfer[] @relation("TransferTo")
+
+  @@map("evidence_locations")
+}
+
+model EvidenceTransfer {
+  transferId     Int       @id @default(autoincrement()) @map("transfer_id")
+  evidenceId     Int       @map("evidence_id")
+  fromLocationId Int       @map("from_location_id")
+  toLocationId   Int       @map("to_location_id")
+  transferredById Int      @map("transferred_by")
+  receivedById   Int?      @map("received_by")
+  reason         String    @db.VarChar(255)
+  status         String    @default("PENDING") @db.VarChar(12) // PENDING|COMPLETED|REJECTED
+  blockchainTxId String?   @map("blockchain_tx_id") @db.VarChar(120)
+  initiatedAt    DateTime  @default(now()) @map("initiated_at")
+  completedAt    DateTime? @map("completed_at")
+
+  evidence     Evidence         @relation(fields: [evidenceId], references: [evidenceId], onDelete: Cascade)
+  fromLocation EvidenceLocation @relation("TransferFrom", fields: [fromLocationId], references: [locationId])
+  toLocation   EvidenceLocation @relation("TransferTo", fields: [toLocationId], references: [locationId])
+  transferredBy User            @relation("TransferBy", fields: [transferredById], references: [userId])
+  receivedBy   User?            @relation("TransferReceivedBy", fields: [receivedById], references: [userId])
+
+  @@index([evidenceId])
+  @@index([status])
+  @@map("evidence_transfers")
+}
+
+model InvestigationUpdate {
+  updateId   Int      @id @default(autoincrement()) @map("update_id")
+  caseId     Int      @map("case_id")
+  authorId   Int      @map("author_id")
+  updateType String   @map("update_type") @db.VarChar(16) // NOTE|FINDING|REQUEST|STATUS_CHANGE
+  body       String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  case   Case @relation(fields: [caseId], references: [caseId], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [userId])
+
+  @@index([caseId])
+  @@map("investigation_updates")
+}
+
+model ForensicAnalysis {
+  analysisId  Int       @id @default(autoincrement()) @map("analysis_id")
+  evidenceId  Int       @map("evidence_id")
+  analystId   Int       @map("analyst_id")
+  method      String    @db.VarChar(120)
+  summary     String    @db.Text
+  result      String    @db.VarChar(40) // INCONCLUSIVE|SUPPORTS|CONTRADICTS
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  evidence Evidence @relation(fields: [evidenceId], references: [evidenceId], onDelete: Cascade)
+  analyst  User     @relation(fields: [analystId], references: [userId])
+
+  @@index([evidenceId])
+  @@map("forensic_analysis")
+}
+
+model CourtSubmission {
+  submissionId   Int      @id @default(autoincrement()) @map("submission_id")
+  caseId         Int      @map("case_id")
+  evidenceId     Int      @map("evidence_id")
+  submittedById  Int      @map("submitted_by")
+  courtReference String   @map("court_reference") @db.VarChar(60)
+  status         String   @default("DRAFT") @db.VarChar(12) // DRAFT|SUBMITTED|ACCEPTED|RETURNED
+  submittedAt    DateTime @default(now()) @map("submitted_at")
+
+  case        Case     @relation(fields: [caseId], references: [caseId], onDelete: Cascade)
+  evidence    Evidence @relation(fields: [evidenceId], references: [evidenceId])
+  submittedBy User     @relation(fields: [submittedById], references: [userId])
+
+  @@index([caseId])
+  @@index([evidenceId])
+  @@map("court_submissions")
+}
+
+/// ─────────────────── Ledger mirror & audit ───────────────────
+
+model BlockchainTransaction {
+  txId           Int      @id @default(autoincrement()) @map("tx_id")
+  evidenceId     Int      @map("evidence_id")
+  eventType      String   @map("event_type") @db.VarChar(32)
+  fabricTxId     String   @map("fabric_tx_id") @db.VarChar(120)
+  blockReference String?  @map("block_reference") @db.VarChar(60)
+  recordedHash   String   @map("recorded_hash") @db.Char(64)
+  payload        Json?
+  recordedAt     DateTime @default(now()) @map("recorded_at")
+
+  evidence Evidence @relation(fields: [evidenceId], references: [evidenceId], onDelete: Cascade)
+
+  @@index([evidenceId])
+  @@index([eventType])
+  @@map("blockchain_transactions")
+}
+
+model AuditLog {
+  auditId    Int      @id @default(autoincrement()) @map("audit_id")
+  actorId    Int?     @map("actor_id")
+  action     String   @db.VarChar(60)
+  entityType String   @map("entity_type") @db.VarChar(40)
+  entityId   Int?     @map("entity_id")
+  detail     String?  @db.VarChar(500)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [userId])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

@@ -1,0 +1,48 @@
+# agent tooling
+.agents/
+./agents/
+
+# dependencies
+node_modules/
+**/node_modules/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+server/keys/
+!server/keys/.gitkeep
+
+# build output
+dist/
+build/
+web/dist/
+server/dist/
+
+# uploads / evidence storage (never commit real or demo evidence blobs)
+server/storage/
+!server/storage/.gitkeep
+
+# prisma
+server/prisma/*.db
+server/prisma/migrations/**/migration_lock.toml
+
+# hyperledger fabric generated material
+fabric/fabric-samples/
+fabric/organizations/
+fabric/wallet/
+fabric/*.tar.gz
+
+# logs / os / editor
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+coverage/
