@@ -29,7 +29,8 @@ Third-year B.Tech CSE DBMS project. Academic demonstration — not a production 
 # 1. install workspaces
 npm install
 
-# 2. database
+# 2. database  (Postgres runs in Docker on host port 5433 — 5432 is often taken
+#    by a local PostgreSQL install)
 cp server/.env.example server/.env      # then fill JWT_SECRET + EVIDENCE_ENC_KEY
 npm run db:up                            # postgres in docker
 npm run --workspace server prisma:migrate
@@ -38,6 +39,15 @@ npm run db:seed                          # fictional demo data
 
 # 3. run API + web
 npm run dev                              # server :4000, web :5173
+```
+
+Then open **http://localhost:5173**. Adminer (DB browser) is at http://localhost:8080
+(system PostgreSQL, server `postgres`, user/pass/db `blockproof`).
+
+### Test
+
+```bash
+npm run --workspace server test          # crypto + RBAC unit tests
 ```
 
 ### Generate the secrets `server/.env` needs
