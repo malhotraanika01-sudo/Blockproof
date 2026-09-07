@@ -1,6 +1,8 @@
-# agent tooling
+# local agent tooling and notes
 .agents/
-./agents/
+agents/
+.claude/
+CLAUDE.md
 
 # dependencies
 node_modules/
