@@ -9,6 +9,12 @@ import { Spinner } from '../../components/ui.jsx';
 import CountUp from '../../components/CountUp.jsx';
 
 const PIE = ['#14b8a6', '#7c3aed', '#f59e0b', '#ef4444', '#3b82f6', '#22c55e'];
+const TOOLTIP_STYLE = {
+  background: '#f8f5ee',
+  border: '1px solid #d6d0c4',
+  borderRadius: 8,
+  color: '#1f2937',
+};
 
 function Panel({ title, children }) {
   return (
@@ -69,7 +75,7 @@ export default function CommandCenter() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#233040" />
                 <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
                 <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#0b0f14', border: '1px solid #233040', borderRadius: 8 }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: '#1f2937' }} itemStyle={{ color: '#1f2937' }} />
                 <Bar dataKey="value" fill="#14b8a6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -83,7 +89,7 @@ export default function CommandCenter() {
                     <Cell key={i} fill={PIE[i % PIE.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#0b0f14', border: '1px solid #233040', borderRadius: 8 }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: '#1f2937' }} itemStyle={{ color: '#1f2937' }} />
               </PieChart>
             </ResponsiveContainer>
           </Panel>
@@ -94,7 +100,7 @@ export default function CommandCenter() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#233040" />
                 <XAxis type="number" stroke="#64748b" fontSize={11} allowDecimals={false} />
                 <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} width={110} />
-                <Tooltip contentStyle={{ background: '#0b0f14', border: '1px solid #233040', borderRadius: 8 }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: '#1f2937' }} itemStyle={{ color: '#1f2937' }} />
                 <Bar dataKey="cases" fill="#7c3aed" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -106,7 +112,7 @@ export default function CommandCenter() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#233040" />
                 <XAxis dataKey="type" stroke="#64748b" fontSize={11} />
                 <YAxis stroke="#64748b" fontSize={11} allowDecimals={false} />
-                <Tooltip contentStyle={{ background: '#0b0f14', border: '1px solid #233040', borderRadius: 8 }} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} labelStyle={{ color: '#1f2937' }} itemStyle={{ color: '#1f2937' }} />
                 <Bar dataKey="items" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
