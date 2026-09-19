@@ -22,9 +22,8 @@ FABRIC_VERSION="2.5.10"
 CA_VERSION="1.5.13"
 
 ensure_samples() {
-  if [ ! -d "${SAMPLES_DIR}" ]; then
+  if [ ! -d "${SAMPLES_DIR}/test-network" ]; then
     echo "Downloading fabric-samples + binaries (${FABRIC_VERSION}) ..."
-    mkdir -p "${SAMPLES_DIR}"
     cd "${FABRIC_DIR}"
     curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh -o install-fabric.sh
     chmod +x install-fabric.sh

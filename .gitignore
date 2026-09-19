@@ -39,6 +39,7 @@ fabric/fabric-samples/
 fabric/organizations/
 fabric/wallet/
 fabric/*.tar.gz
+fabric/install-fabric.sh
 
 # logs / os / editor
 *.log
