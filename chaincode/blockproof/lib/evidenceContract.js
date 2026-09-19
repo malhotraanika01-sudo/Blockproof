@@ -39,6 +39,15 @@ class EvidenceContract extends Contract {
       throw new Error(`Evidence ${code} does not exist`);
     }
     const evidence = JSON.parse(evBytes.toString());
+    return this._appendEventToRecord(ctx, evidence, eventType, sha256, payload);
+  }
+
+  // Same as _appendEvent, but for a record already held in memory (e.g. one
+  // just written earlier in this same transaction) — avoids a getState
+  // immediately after the putState that created it, which is not guaranteed
+  // to observe the pending write during simulation.
+  async _appendEventToRecord(ctx, evidence, eventType, sha256, payload) {
+    const code = evidence.evidenceCode;
     const index = evidence.eventCount;
     const { txId, timestamp } = await this._txMeta(ctx);
 
@@ -89,7 +98,7 @@ class EvidenceContract extends Contract {
       lastEventAt: null,
     };
     await ctx.stub.putState(key, Buffer.from(JSON.stringify(evidence)));
-    const event = await this._appendEvent(ctx, code, 'EVIDENCE_CREATED', sha256, { submittedBy, filename });
+    const event = await this._appendEventToRecord(ctx, evidence, 'EVIDENCE_CREATED', sha256, { submittedBy, filename });
     return JSON.stringify({ blockReference: event.blockReference, txId: event.txId });
   }
 
