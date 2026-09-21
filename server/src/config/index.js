@@ -30,6 +30,13 @@ export const config = {
     walletDir: process.env.FABRIC_WALLET_DIR,
     identity: process.env.FABRIC_IDENTITY || 'appUser',
     mspId: process.env.FABRIC_MSP_ID || 'Org1MSP',
+    // Local test-network: discovery on + asLocalhost (peer-discovered addresses
+    // get rewritten to localhost). Remote/tunneled deployments must turn
+    // discovery off and use a fully static connection profile instead, since
+    // discovered addresses would be internal container hostnames the remote
+    // host can't reach and asLocalhost's rewrite doesn't apply cross-host.
+    discoveryEnabled: process.env.FABRIC_DISCOVERY_ENABLED !== 'false',
+    discoveryAsLocalhost: process.env.FABRIC_DISCOVERY_AS_LOCALHOST !== 'false',
   },
 
   isProd() {

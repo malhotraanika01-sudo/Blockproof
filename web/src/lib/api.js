@@ -19,7 +19,10 @@ export const tokenStore = {
   },
 };
 
-export const api = axios.create({ baseURL: '/api' });
+// In dev, Vite proxies relative '/api' to the local server (see vite.config.js).
+// In production, frontend and backend are deployed separately (Vercel + Render),
+// so the backend's absolute URL must be baked in at build time.
+export const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' });
 
 api.interceptors.request.use((cfg) => {
   const t = tokenStore.get();

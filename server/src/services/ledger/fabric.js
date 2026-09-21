@@ -43,7 +43,7 @@ export class FabricLedger {
     await this.gateway.connect(ccp, {
       wallet,
       identity: config.ledger.identity,
-      discovery: { enabled: true, asLocalhost: true },
+      discovery: { enabled: config.ledger.discoveryEnabled, asLocalhost: config.ledger.discoveryAsLocalhost },
     });
     const network = await this.gateway.getNetwork(config.ledger.channel);
     this.contract = network.getContract(config.ledger.chaincode);

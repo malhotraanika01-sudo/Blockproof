@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: blockproof-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run --workspace server prisma:generate
+    startCommand: npm run --workspace server start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      # --- set these in the Render dashboard (not committed) ---
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: EVIDENCE_ENC_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false # your Vercel URL, e.g. https://blockproof.vercel.app
+      - key: MAX_UPLOAD_MB
+        value: "25"
+      - key: EVIDENCE_STORAGE_DIR
+        value: ./storage
+      # --- ledger: real Fabric over ngrok tunnels ---
+      - key: LEDGER_DRIVER
+        value: fabric
+      - key: FABRIC_CHANNEL
+        value: blockproofchannel
+      - key: FABRIC_CHAINCODE
+        value: blockproof
+      - key: FABRIC_CONNECTION_PROFILE
+        value: ../fabric/organizations/connection-cloud.json
+      - key: FABRIC_WALLET_DIR
+        value: ../fabric/wallet
+      - key: FABRIC_IDENTITY
+        value: appUser
+      - key: FABRIC_MSP_ID
+        value: Org1MSP
+      - key: FABRIC_DISCOVERY_ENABLED
+        value: "false"
+      - key: FABRIC_DISCOVERY_AS_LOCALHOST
+        value: "false"
