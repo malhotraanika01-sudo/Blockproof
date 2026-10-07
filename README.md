@@ -12,7 +12,7 @@ Third-year B.Tech CSE DBMS project. Academic demonstration — not a production 
 | Layer | Tech |
 |---|---|
 | Database | PostgreSQL 16 + Prisma ORM (16 tables, 3NF+, views, functions, triggers) |
-| API | Node.js + Express (JavaScript, ESM), JWT + Argon2id, table-driven RBAC |
+| API | Node.js + Express (JavaScript, ESM), short-lived JWT (in-memory on the client) + rotating httpOnly-cookie refresh tokens, Argon2id, table-driven RBAC |
 | Crypto | SHA-256 (integrity) + AES-256-GCM (confidentiality) |
 | Ledger | Hyperledger Fabric test-network, JavaScript chaincode — behind a `LedgerService` interface (`mock` / `fabric`) |
 | Web | React + Vite, Tailwind CSS, Framer Motion, Lucide React, Recharts, React Router — one app, three route-isolated shells |

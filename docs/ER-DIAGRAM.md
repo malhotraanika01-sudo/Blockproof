@@ -1,7 +1,7 @@
 # BlockProof — ER Diagram
 
 Entities are derived first (per the professor's requirement that evaluated tables come from the ER model).
-14 entities, 3NF or higher. Mermaid source below renders on GitHub.
+17 entities, 3NF or higher. Mermaid source below renders on GitHub.
 
 ```mermaid
 erDiagram
@@ -16,6 +16,7 @@ erDiagram
     USERS ||--o{ EVIDENCE_TRANSFERS : initiates
     USERS ||--o{ FORENSIC_ANALYSIS : performs
     USERS ||--o{ AUDIT_LOGS : "acts in"
+    USERS ||--o{ REFRESH_TOKENS : "has sessions"
 
     CRIME_REPORTS ||--o| CASES : "escalated into"
     CRIME_REPORTS ||--o{ EVIDENCE : "submitted with"
@@ -57,6 +58,17 @@ erDiagram
         bool is_active
         datetime created_at
         datetime updated_at
+    }
+    REFRESH_TOKENS {
+        int token_id PK
+        int user_id FK
+        string token_hash UK "sha256 hex of the raw cookie value"
+        datetime expires_at
+        datetime created_at
+        datetime revoked_at
+        int replaced_by_token_id FK "self-ref, chains rotation"
+        string user_agent
+        string ip
     }
     CRIME_REPORTS {
         int report_id PK
@@ -194,6 +206,7 @@ erDiagram
 - `EVIDENCE.case_id` is nullable — evidence exists from the moment of the report, before a case is opened.
 - `BLOCKCHAIN_TRANSACTIONS` is an append-only mirror of ledger events; PostgreSQL never mutates existing rows.
 - `AUDIT_LOGS` is written by triggers, not by application code, for tamper-relevant actions.
+- `REFRESH_TOKENS` 1—* per user: a session is a row, not a client-held credential — the JWT access token is short-lived and held only in browser memory, so this table (rotating, hash-only, revocable) is where "being logged in" actually lives.
 
 ## Normalization
 

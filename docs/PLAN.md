@@ -11,7 +11,7 @@
 | Repo | npm-workspaces monorepo: `server/`, `web/`, `chaincode/`, `fabric/`. |
 | Frontend architecture | **One Vite + React app, three route-isolated shells** (`/` common, `/investigator/*`, `/head/*`). Each shell has its own layout, navigation, and design tokens so the three read as different products — not one dashboard with hidden buttons. |
 | DB | PostgreSQL 16 (Docker), Prisma ORM. ~14 normalized tables, 3NF+. |
-| Auth | JWT (access token, role claim) + Argon2id password hashing. |
+| Auth | Short-lived JWT access token (role claim, kept in browser memory only — never localStorage) + rotating httpOnly-cookie refresh token (`refresh_tokens` table) + Argon2id password hashing. |
 | RBAC | Table-driven (`roles` + `permissions` + `role_permissions`), enforced in Express middleware on **every** protected route. |
 | Evidence confidentiality | AES-256-GCM over the original file bytes. |
 | Evidence integrity | SHA-256 fingerprint of original bytes. |

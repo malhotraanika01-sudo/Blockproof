@@ -40,6 +40,7 @@ fabric/organizations/
 fabric/wallet/
 fabric/*.tar.gz
 fabric/install-fabric.sh
+fabric/ngrok.yml
 
 # logs / os / editor
 *.log

@@ -1,6 +1,6 @@
 # BlockProof — Data Dictionary
 
-PostgreSQL, 16 tables. Types shown as declared via Prisma. PK = primary key,
+PostgreSQL, 17 tables. Types shown as declared via Prisma. PK = primary key,
 FK = foreign key, UK = unique. Every table has surrogate integer PK.
 
 ## roles
@@ -38,6 +38,24 @@ Composite PK. Resolves the many-to-many between roles and permissions.
 | is_active | bool | NOT NULL, DEFAULT true | |
 | created_at | timestamptz | DEFAULT now() | |
 | updated_at | timestamptz | auto | |
+
+## refresh_tokens
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| token_id | serial | PK | |
+| user_id | int | NOT NULL, FK → users (ON DELETE CASCADE) | indexed |
+| token_hash | varchar(64) | NOT NULL, UK | SHA-256 hex of the raw token — the raw value only ever exists in the httpOnly cookie, never at rest |
+| expires_at | timestamptz | NOT NULL | 7 days from issue (`REFRESH_TOKEN_DAYS`) |
+| created_at | timestamptz | DEFAULT now() | |
+| revoked_at | timestamptz | nullable | set on logout, on rotation, or on replay-detected revocation |
+| replaced_by_token_id | int | nullable, FK → refresh_tokens | chains a rotation so a reused (already-rotated) token is detectable |
+| user_agent | varchar(255) | nullable | |
+| ip | varchar(64) | nullable | |
+
+Backs the session model: the access token (JWT) is short-lived (15 min) and
+kept only in browser memory, never localStorage; this table is the only
+place a session is actually persisted, as a rotating, revocable credential.
+See `server/src/services/refreshToken.js`.
 
 ## crime_reports
 | Column | Type | Constraints | Notes |

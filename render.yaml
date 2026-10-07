@@ -30,10 +30,13 @@ services:
         value: blockproofchannel
       - key: FABRIC_CHAINCODE
         value: blockproof
+      # Render's Secret Files are flat (no subfolders) and always land in
+      # /etc/secrets/<filename> regardless of the service's working directory,
+      # so these point there instead of a repo-relative fabric/... path.
       - key: FABRIC_CONNECTION_PROFILE
-        value: ../fabric/organizations/connection-cloud.json
+        value: /etc/secrets/connection-cloud.json
       - key: FABRIC_WALLET_DIR
-        value: ../fabric/wallet
+        value: /etc/secrets
       - key: FABRIC_IDENTITY
         value: appUser
       - key: FABRIC_MSP_ID

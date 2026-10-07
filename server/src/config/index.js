@@ -12,7 +12,15 @@ export const config = {
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(','),
 
   jwtSecret: required('JWT_SECRET'),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
+  // Short-lived access token — it lives only in memory on the client (never
+  // localStorage), so a short expiry limits how long a leaked token is useful.
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
+
+  // Refresh token — long-lived, delivered only as an httpOnly cookie (never
+  // readable by JS, so not stealable via XSS), rotated on every use. See
+  // services/refreshToken.js.
+  refreshTokenDays: Number(process.env.REFRESH_TOKEN_DAYS || 7),
+  refreshCookieName: 'bp_rt',
 
   evidence: {
     storageDir: process.env.EVIDENCE_STORAGE_DIR || './storage',
