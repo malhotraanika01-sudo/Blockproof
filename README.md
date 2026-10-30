@@ -3,8 +3,7 @@
 Blockchain-Based Digital Crime Reporting, Evidence Integrity & Investigation Management System.
 Third-year B.Tech CSE DBMS project. Academic demonstration — not a production forensic/court system.
 
-- **Product & architecture spec:** 
-- **Product & architecture spec:** [`BlockProof_Master_PRD.md`](./docs/BlockProof_Master_PRD.md), [`architecture.html`](./docs/architecture.html)
+- - **Product & architecture spec:** [`BlockProof_Master_PRD.md`](./BlockProof_Master_PRD.md), [`BlockProof_Architecture (1).html`](./BlockProof_Architecture%20(1).html)
 - **Implementation plan:** [`docs/PLAN.md`](./docs/PLAN.md)
 - **ER diagram:** [`docs/ER-DIAGRAM.md`](./docs/ER-DIAGRAM.md) · **Data dictionary:** [`docs/DATA-DICTIONARY.md`](./docs/DATA-DICTIONARY.md)
 

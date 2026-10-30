@@ -26,19 +26,13 @@ build/
 web/dist/
 server/dist/
 
-# caches / build leftovers
-*.tsbuildinfo
-.eslintcache
-.vite/
-.cache/
-*.tgz
-
 # uploads / evidence storage (never commit real or demo evidence blobs)
 server/storage/
 !server/storage/.gitkeep
 
 # prisma
 server/prisma/*.db
+server/prisma/migrations/**/migration_lock.toml
 
 # hyperledger fabric generated material
 fabric/fabric-samples/
@@ -57,4 +51,3 @@ Thumbs.db
 .vscode/
 .idea/
 coverage/
-.vite.err
