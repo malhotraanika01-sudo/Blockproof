@@ -45,6 +45,13 @@ const profile = {
       grpcOptions: {
         'ssl-target-name-override': 'peer0.org1.example.com',
         hostnameOverride: 'peer0.org1.example.com',
+        // fabric-common hardcodes a 3000ms default here (Client.js) — far too
+        // short for a TLS handshake routed through a free-tier ngrok tunnel
+        // across continents. Once that first connect attempt times out the
+        // endpoint is marked dead and never retried, so every later
+        // transaction fails instantly with "is not connected" even though
+        // the tunnel itself is fine. Give it real headroom instead.
+        'grpc-wait-for-ready-timeout': 20000,
       },
     },
     'peer0.org2.example.com': {
@@ -53,6 +60,7 @@ const profile = {
       grpcOptions: {
         'ssl-target-name-override': 'peer0.org2.example.com',
         hostnameOverride: 'peer0.org2.example.com',
+        'grpc-wait-for-ready-timeout': 20000,
       },
     },
   },
@@ -63,6 +71,7 @@ const profile = {
       grpcOptions: {
         'ssl-target-name-override': 'orderer.example.com',
         hostnameOverride: 'orderer.example.com',
+        'grpc-wait-for-ready-timeout': 20000,
       },
     },
   },
