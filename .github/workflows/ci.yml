@@ -1,0 +1,52 @@
+name: CI
+
+# Runs on every push/PR to main: server unit tests, Prisma schema validation,
+# and a production web build — the three things that would actually catch a
+# broken commit before it reaches Render/Vercel's auto-deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  server-tests:
+    name: Server unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Run server test suite (crypto round-trip/tamper-detection, RBAC gating)
+        run: npm run --workspace server test
+
+  prisma-validate:
+    name: Prisma schema validate
+    runs-on: ubuntu-latest
+    env:
+      # No live database needed — `prisma validate` only checks schema
+      # syntax/consistency, but the Prisma CLI still needs the env var
+      # it's told to resolve to be defined.
+      DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Validate Prisma schema (17 tables, 3NF+)
+        run: npx prisma validate --schema=server/prisma/schema.prisma
+
+  web-build:
+    name: Web production build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Build the React + Vite app
+        run: npm run build --workspace web
